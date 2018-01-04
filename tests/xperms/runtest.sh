@@ -18,7 +18,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Denied ioctl number"
-        rlRun "echo '' >/var/log/audit/audit.log"
+        rlRun "true >/var/log/audit/audit.log"
 
         # ioctl() will return Permission denied because this ioctl number
         # is not allowed
@@ -44,7 +44,7 @@ rlJournalStart
     rlPhaseEnd
 
     rlPhaseStartTest "Allowed ioctl number"
-        rlRun "echo '' >/var/log/audit/audit.log"
+        rlRun "true >/var/log/audit/audit.log"
 
         # ioctl() will not return Permission denied because this ioctl number
         # is allowed
