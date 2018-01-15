@@ -2,31 +2,37 @@
 
 rlJournalStart
     rlPhaseStartSetup
-        rlAssertExists "test.c" || rlDie
-        rlAssertExists "test_module.te" || rlDie
+        # we expect that there is pulseaudio module present which contains
+        # following rules:
+        #
+        #   type pulseaudio_t;
+        #   type pulseaudio_port_t;
+        #   portcon tcp 4713 system_u:object_r:pulseaudio_port_t:s0
+        #   portcon udp 4713 system_u:object_r:pulseaudio_port_t:s0
+        #
 
-        rlRun "gcc test.c -o test"
-
-        rlRun "checkmodule -m -M test_module.te -o test_module.mod"
-        rlRun "semodule_package -m test_module.mod -o test_module.pp"
-        rlRun "semodule -i test_module.pp"
+        rlRun "true >/var/log/audit/audit.log"
     rlPhaseEnd
 
     rlPhaseStartTest
-        rlRun "true >/var/log/audit/audit.log"
+        # AVC: pulseaudio_t was denied name_bind on udp port 14 (which is
+        # reserved_port_t)
+        # TODO: generate real AVC
+        avc='type=AVC msg=audit(1458086688.481:1296): avc: denied { name_bind } for src=14 scontext=system_u:system_r:pulseaudio_t:s0 tcontext=system_u:object_r:reserved_port_t:s0 tclass=udp_socket';
 
-        rlRun "semanage port -a -t my_test_port_t -p tcp 12345"
+        rlRun "echo '$avc' | audit2allow"
 
-        rlRun "semanage port -l | grep 12345 | grep my_test_port_t"
+        # audit2allow should not provide allow rule, pulseaudio_t would gain
+        # access to all reserved ports
+        rlRun "echo '$avc' | audit2allow | grep 'allow pulseaudio_t reserved_port_t:udp_socket name_bind;'" 1
 
-        rlRun "./test 12345"
-
-        rlRun "ausearch -m avc"
+        # audit2allow should provide semanage port command
+        # 
+        #   semanage port -a -t pulseaudio_port_t -p udp 14
+        #
+        rlRun "echo '$avc' | audit2allow | grep 'semanage port'"
     rlPhaseEnd
 
     rlPhaseStartCleanup
-        rlRun "semanage port -d -p tcp 12345"
-        rlRun "semodule -r test_module"
-        rlRun "rm test test_module.pp test_module.mod"
     rlPhaseEnd
 rlJournalEnd
