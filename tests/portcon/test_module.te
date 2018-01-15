@@ -1,0 +1,37 @@
+module test_module 1.0;
+
+require {
+    type admin_home_t;
+    type user_devpts_t;
+    type node_t;
+    role unconfined_r;
+    attribute domain;
+    attribute port_type;
+    class file { entrypoint map execute getattr read write };
+    class chr_file { getattr read write };
+    class tcp_socket { create bind name_bind node_bind };
+    class capability { net_bind_service };
+}
+
+# create new domain
+type my_test_domain_t;
+typeattribute my_test_domain_t domain;
+role unconfined_r types my_test_domain_t;
+
+# allow running program in this domain
+allow my_test_domain_t admin_home_t:file { entrypoint map execute getattr read write };
+allow my_test_domain_t user_devpts_t:chr_file { getattr read write };
+
+# allow creating socket
+allow my_test_domain_t self:tcp_socket { create bind };
+
+# create socket type
+type my_test_domain_port_t;
+typeattribute my_test_domain_port_t port_type;
+
+# necessary for creating socket
+allow my_test_domain_t my_test_domain_port_t:tcp_socket { create bind name_bind };
+
+# necessary for bind() to succeed
+allow my_test_domain_t node_t:tcp_socket { node_bind };
+allow my_test_domain_t self:capability net_bind_service;
