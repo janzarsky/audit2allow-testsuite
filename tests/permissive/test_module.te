@@ -1,0 +1,19 @@
+module test_module 1.0;
+
+require {
+    type admin_home_t;
+    type user_devpts_t;
+    role unconfined_r;
+    attribute domain;
+    class file { entrypoint map execute getattr read write open relabelto };
+    class chr_file { getattr read write append };
+}
+
+# create new domain
+type my_test_domain_t;
+typeattribute my_test_domain_t domain;
+role unconfined_r types my_test_domain_t;
+
+# allow running program in this domain
+allow my_test_domain_t admin_home_t:file { entrypoint map execute getattr read write };
+allow my_test_domain_t user_devpts_t:chr_file { getattr read write append };
