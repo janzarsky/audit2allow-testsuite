@@ -44,6 +44,10 @@ rlJournalStart
         # but there should still be AVCs
         rlRun "ausearch -m avc | grep 'denied  { open }'"
         rlRun "ausearch -m avc | audit2allow | grep 'allow my_test_domain_t admin_home_t:file open;'"
+
+        # audit2allow should warn that this domain is permissive
+        rlRun "ausearch -m avc | audit2allow | grep permissive"
+        rlRun "ausearch -m avc | audit2why | grep permissive"
     rlPhaseEnd
 
     rlPhaseStartCleanup
