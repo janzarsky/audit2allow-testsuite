@@ -1,0 +1,16 @@
+module test_module 1.0;
+
+require {
+    type unconfined_t;
+    type fs_t;
+    class file { ioctl getattr read open relabelto };
+    class filesystem { associate };
+}
+
+type my_test_file_t;
+allow my_test_file_t fs_t:filesystem associate;
+
+allow unconfined_t my_test_file_t : file { ioctl getattr read open relabelto };
+
+allowxperm unconfined_t my_test_file_t : file ioctl { 0x10 0x20 };
+allowxperm unconfined_t my_test_file_t : file ioctl ~ { 0x20 0x30 };
