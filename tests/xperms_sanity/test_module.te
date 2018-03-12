@@ -8,12 +8,11 @@ require {
 }
 
 type my_test_file_t;
-
 allow my_test_file_t fs_t:filesystem associate;
+allow unconfined_t my_test_file_t : file { getattr read open relabelto };
 
-# it is allowed for unconfined_t to ioctl my_test_file_t, but it is further
-# restricted by allowxperm rule
-allow unconfined_t my_test_file_t : file { ioctl getattr read open relabelto };
-
-# limit ioctl only to number 0x8927
-allowxperm unconfined_t my_test_file_t : file ioctl 0x8927;
+allow unconfined_t my_test_file_t : file ioctl;
+allowxperm unconfined_t my_test_file_t : file ioctl 1;
+allowxperm unconfined_t my_test_file_t : file ioctl 0x02;
+allowxperm unconfined_t my_test_file_t : file ioctl 3;
+allowxperm unconfined_t my_test_file_t : file ioctl { 10-20 };

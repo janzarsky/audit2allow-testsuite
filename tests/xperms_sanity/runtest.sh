@@ -19,26 +19,47 @@ rlJournalStart
         rlRun "ls -lZ"
     rlPhaseEnd
 
-    rlPhaseStartTest "Denied ioctl number"
+    rlPhaseStartTest
         rlRun "true >/var/log/audit/audit.log"
 
-        rlRun "./test testfile 0x42" 1
+        # generate AVCs
+        rlRun "./test testfile 128" 1
+        rlRun "./test testfile 129" 1
+        rlRun "./test testfile 130" 1
+        rlRun "./test testfile 132" 1
 
-        rlRun "ausearch -m avc | grep 'ioctlcmd=0x42'"
+        rlRun "ausearch -m avc | grep 'ioctlcmd=0x80'"
+        rlRun "ausearch -m avc | grep 'ioctlcmd=0x81'"
+        rlRun "ausearch -m avc | grep 'ioctlcmd=0x82'"
+        rlRun "ausearch -m avc | grep 'ioctlcmd=0x84'"
 
-        rlRun "ausearch -m avc | python $(which audit2allow) | grep -C 999 allowxperm"
-    rlPhaseEnd
+        # run audit2allow
+        rlRun "ausearch -m avc | python $(which audit2allow) | tee rules"
 
-    rlPhaseStartTest "Allowed ioctl number"
-        rlRun "true >/var/log/audit/audit.log"
+        rlRun "grep 'allow unconfined_t my_test_file_t:file ioctl;' rules"
+        rlRun "grep 'allowxperm unconfined_t my_test_file_t:file ioctl { 128-130 132 };' rules"
 
-        rlRun "./test testfile 0x8927" 0
+        # run audit2allow, generate dontaudit rules
+        rlRun "ausearch -m avc | python $(which audit2allow) -D | tee rules"
 
-        rlRun "ausearch -m avc | grep 'ioctlcmd'" 1
+        rlRun "grep 'dontaudit unconfined_t my_test_file_t:file ioctl;' rules"
+        rlRun "grep 'dontauditxperm unconfined_t my_test_file_t:file ioctl { 128-130 132 };' rules"
+
+        # run audit2allow, verbose mode
+        rlRun "ausearch -m avc | python $(which audit2allow) -v | tee rules"
+
+        # TODO
+        rlRun "grep 'ioctlcmd=' rules"
+
+        rlRun "grep 'allow unconfined_t my_test_file_t:file ioctl;' rules"
+        rlRun "grep 'allowxperm unconfined_t my_test_file_t:file ioctl { 128-130 132 };' rules"
+
+        # run audit2why
+        rlRun "ausearch -m avc | python $(which audit2allow) -w | tee rules"
     rlPhaseEnd
 
     rlPhaseStartCleanup
         rlRun "semodule -r test_module"
-        rlRun "rm test testfile test_module.pp test_module.mod"
+        rlRun "rm test testfile test_module.pp test_module.mod rules"
     rlPhaseEnd
 rlJournalEnd
