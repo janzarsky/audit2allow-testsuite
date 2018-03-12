@@ -1,0 +1,19 @@
+module test_module 1.0;
+
+require {
+    type unconfined_t;
+    type fs_t;
+    class file { ioctl getattr read open relabelto };
+    class filesystem { associate };
+}
+
+type my_test_file_t;
+
+allow my_test_file_t fs_t:filesystem associate;
+
+# it is allowed for unconfined_t to ioctl my_test_file_t, but it is further
+# restricted by allowxperm rule
+allow unconfined_t my_test_file_t : file { ioctl getattr read open relabelto };
+
+# limit ioctl only to number 0x8927
+allowxperm unconfined_t my_test_file_t : file ioctl 0x8927;
