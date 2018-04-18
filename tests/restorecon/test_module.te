@@ -12,4 +12,4 @@ type my_test_file_t;
 allow my_test_file_t fs_t:filesystem associate;
 
 # allow reading file
-allow unconfined_t my_test_file_t : file { ioctl getattr read open relabelto };
+allow unconfined_t my_test_file_t : file { relabelto };
