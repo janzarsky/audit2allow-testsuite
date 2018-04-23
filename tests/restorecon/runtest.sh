@@ -4,8 +4,6 @@ rlJournalStart
     rlPhaseStartSetup
         rlAssertExists "test_module.te" || rlDie
 
-        rlRun "which audit2allow"
-
         # load module which creates new type and allows reading by unconfined_t
         rlRun "checkmodule -m -M test_module.te -o test_module.mod"
         rlRun "semodule_package -m test_module.mod -o test_module.pp"
@@ -33,10 +31,10 @@ rlJournalStart
 
         # audit2allow will produce allow rule while it could also recommend
         # changing context of the file
-        rlRun "ausearch -m all | python $(which audit2allow)"
+        rlRun "ausearch -m all | audit2allow"
 
         # look for warning
-        rlRun "ausearch -m all | python $(which audit2allow) |
+        rlRun "ausearch -m all | audit2allow |
             grep 'file has other than default context' | grep 'testfile'"
     rlPhaseEnd
 
