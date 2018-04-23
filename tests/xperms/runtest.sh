@@ -7,8 +7,6 @@ rlJournalStart
 
         rlAssertRpm "gcc" || rlDie
 
-        rlRun "which audit2allow"
-
         rlRun "checkmodule -m -M test_module.te -o test_module.mod"
         rlRun "semodule_package -m test_module.mod -o test_module.pp"
         rlRun "semodule -i test_module.pp"
@@ -36,30 +34,25 @@ rlJournalStart
         rlRun "ausearch -m avc | grep 'ioctlcmd=0x84'"
 
         # run audit2allow, no xperms
-        rlRun "ausearch -m avc | python $(which audit2allow) | tee rules"
+        rlRun "ausearch -m avc | audit2allow | tee rules"
 
         rlRun "grep 'allow unconfined_t my_test_file_t:file ioctl;' rules"
         rlRun "grep 'allowxperm unconfined_t my_test_file_t:file ioctl { 128-130 132 };' rules" 1
 
         # run audit2allow, with xperms option
-        rlRun "ausearch -m avc | python $(which audit2allow) -x | tee rules"
+        rlRun "ausearch -m avc | audit2allow -x | tee rules"
 
         rlRun "grep 'allow unconfined_t my_test_file_t:file ioctl;' rules"
         rlRun "grep 'allowxperm unconfined_t my_test_file_t:file ioctl { 128-130 132 };' rules"
 
         # run audit2allow, generate dontaudit rules
-        rlRun "ausearch -m avc | python $(which audit2allow) -x -D | tee rules"
+        rlRun "ausearch -m avc | audit2allow -x -D | tee rules"
 
         rlRun "grep 'dontaudit unconfined_t my_test_file_t:file ioctl;' rules"
         rlRun "grep 'dontauditxperm unconfined_t my_test_file_t:file ioctl { 128-130 132 };' rules"
 
         # run audit2allow, verbose mode
-        rlRun "ausearch -m avc | python $(which audit2allow) -x -v | tee rules"
-
-        # not (yet?) supported
-        # run audit2why
-        #rlRun "ausearch -m avc | python $(which audit2allow) -w | tee rules"
-        #rlRun "grep Unknown rules" 1
+        rlRun "ausearch -m avc | audit2allow -x -v | tee rules"
     rlPhaseEnd
 
     rlPhaseStartCleanup
