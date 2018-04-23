@@ -34,25 +34,28 @@ rlJournalStart
         rlRun "ausearch -m avc | grep 'ioctlcmd=0x84'"
 
         # run audit2allow, no xperms
-        rlRun "ausearch -m avc | audit2allow | tee rules"
+        rlRun "ausearch -m avc | audit2allow >rules"
+        rlRun "cat rules"
 
         rlRun "grep 'allow unconfined_t my_test_file_t:file ioctl;' rules"
         rlRun "grep 'allowxperm unconfined_t my_test_file_t:file ioctl { 128-130 132 };' rules" 1
 
         # run audit2allow, with xperms option
-        rlRun "ausearch -m avc | audit2allow -x | tee rules"
+        rlRun "ausearch -m avc | audit2allow -x > rules"
+        rlRun "cat rules"
 
         rlRun "grep 'allow unconfined_t my_test_file_t:file ioctl;' rules"
         rlRun "grep 'allowxperm unconfined_t my_test_file_t:file ioctl { 128-130 132 };' rules"
 
         # run audit2allow, generate dontaudit rules
-        rlRun "ausearch -m avc | audit2allow -x -D | tee rules"
+        rlRun "ausearch -m avc | audit2allow -x -D > rules"
+        rlRun "cat rules"
 
         rlRun "grep 'dontaudit unconfined_t my_test_file_t:file ioctl;' rules"
         rlRun "grep 'dontauditxperm unconfined_t my_test_file_t:file ioctl { 128-130 132 };' rules"
 
         # run audit2allow, verbose mode
-        rlRun "ausearch -m avc | audit2allow -x -v | tee rules"
+        rlRun "ausearch -m avc | audit2allow -x -v > rules"
     rlPhaseEnd
 
     rlPhaseStartCleanup
