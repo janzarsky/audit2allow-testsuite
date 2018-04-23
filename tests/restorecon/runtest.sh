@@ -14,8 +14,6 @@ rlJournalStart
         # create file which has other than default context
         rlRun "touch testfile"
         rlRun "chcon -t my_test_file_t testfile"
-
-        rlRun "ls -lZ"
     rlPhaseEnd
 
     rlPhaseStartTest
@@ -34,11 +32,12 @@ rlJournalStart
         rlRun "ausearch -m all | grep -C 999 'denied  { write }'"
 
         # audit2allow will produce allow rule while it could also recommend
-        # restorecon for the file
+        # changing context of the file
         rlRun "ausearch -m all | python $(which audit2allow)"
 
-        # look for restorecon recommendation
-        rlRun "ausearch -m all | python $(which audit2allow) | grep restorecon"
+        # look for warning
+        rlRun "ausearch -m all | python $(which audit2allow) |
+            grep 'file has other than default context' | grep 'testfile'"
     rlPhaseEnd
 
     rlPhaseStartCleanup
