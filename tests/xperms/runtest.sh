@@ -5,6 +5,8 @@ rlJournalStart
         rlAssertExists "test.c" || rlDie
         rlAssertExists "test_module.te" || rlDie
 
+        rlRun "which audit2allow"
+
         rlRun "checkmodule -m -M test_module.te -o test_module.mod"
         rlRun "semodule_package -m test_module.mod -o test_module.pp"
         rlRun "semodule -i test_module.pp"
@@ -17,45 +19,49 @@ rlJournalStart
         rlRun "ls -lZ"
     rlPhaseEnd
 
-    rlPhaseStartTest "Denied ioctl number"
+    rlPhaseStartTest
         rlRun "true >/var/log/audit/audit.log"
 
-        # ioctl() will return Permission denied because this ioctl number
-        # is not allowed
-        rlRun "./test testfile 0x42" 1
+        # generate AVCs
+        rlRun "./test testfile 128" 1
+        rlRun "./test testfile 129" 1
+        rlRun "./test testfile 130" 1
+        rlRun "./test testfile 132" 1
 
-        # audit message is generated with ioctlcmd field
-        rlRun "ausearch -m avc | grep 'ioctlcmd=0x42'"
+        rlRun "ausearch -m avc | grep 'ioctlcmd=0x80'"
+        rlRun "ausearch -m avc | grep 'ioctlcmd=0x81'"
+        rlRun "ausearch -m avc | grep 'ioctlcmd=0x82'"
+        rlRun "ausearch -m avc | grep 'ioctlcmd=0x84'"
 
-        rlRun "ausearch -m avc | audit2allow"
+        # run audit2allow, no xperms
+        rlRun "ausearch -m avc | python $(which audit2allow) | tee rules"
 
-        # audit2allow will suggest this:
-        #
-        #   allow unconfined_t my_test_file_t:file ioctl;
-        #
-        # which is allowed in current policy but further restricted by
-        # allowxperm rule.
-        #
-        # Correct solution should be this:
-        #
-        #   allowxperm unconfined_t my_test_file_t:file ioctl 0x42;
-        #
-        rlRun "ausearch -m avc | audit2allow | grep -C 999 allowxperms"
-    rlPhaseEnd
+        rlRun "grep 'allow unconfined_t my_test_file_t:file ioctl;' rules"
+        rlRun "grep 'allowxperm unconfined_t my_test_file_t:file ioctl { 128-130 132 };' rules" 1
 
-    rlPhaseStartTest "Allowed ioctl number"
-        rlRun "true >/var/log/audit/audit.log"
+        # run audit2allow, with xperms option
+        rlRun "ausearch -m avc | python $(which audit2allow) -x | tee rules"
 
-        # ioctl() will not return Permission denied because this ioctl number
-        # is allowed
-        rlRun "./test testfile 0x8927" 0
+        rlRun "grep 'allow unconfined_t my_test_file_t:file ioctl;' rules"
+        rlRun "grep 'allowxperm unconfined_t my_test_file_t:file ioctl { 128-130 132 };' rules"
 
-        # there should be no audit message because 0x8927 is allowed
-        rlRun "ausearch -m avc | grep 'ioctlcmd'" 1
+        # run audit2allow, generate dontaudit rules
+        rlRun "ausearch -m avc | python $(which audit2allow) -x -D | tee rules"
+
+        rlRun "grep 'dontaudit unconfined_t my_test_file_t:file ioctl;' rules"
+        rlRun "grep 'dontauditxperm unconfined_t my_test_file_t:file ioctl { 128-130 132 };' rules"
+
+        # run audit2allow, verbose mode
+        rlRun "ausearch -m avc | python $(which audit2allow) -x -v | tee rules"
+
+        # not (yet?) supported
+        # run audit2why
+        #rlRun "ausearch -m avc | python $(which audit2allow) -w | tee rules"
+        #rlRun "grep Unknown rules" 1
     rlPhaseEnd
 
     rlPhaseStartCleanup
         rlRun "semodule -r test_module"
-        rlRun "rm test testfile test_module.pp test_module.mod"
+        rlRun "rm test testfile test_module.pp test_module.mod rules"
     rlPhaseEnd
 rlJournalEnd
