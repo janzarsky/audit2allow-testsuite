@@ -5,6 +5,8 @@ rlJournalStart
         rlAssertExists "test.c" || rlDie
         rlAssertExists "test_module.te" || rlDie
 
+        rlAssertRpm "gcc" || rlDie
+
         rlRun "which audit2allow"
 
         rlRun "checkmodule -m -M test_module.te -o test_module.mod"
