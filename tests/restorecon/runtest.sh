@@ -35,7 +35,7 @@ rlJournalStart
 
         # look for warning
         rlRun "ausearch -m all | audit2allow |
-            grep 'file has other than default context' | grep 'testfile'"
+            grep 'file has other than the default context' | grep 'testfile'"
     rlPhaseEnd
 
     rlPhaseStartCleanup
